@@ -19,9 +19,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/signalfx/splunk-otel-collector/internal/configmapprovider"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -66,8 +66,8 @@ func (c *configSourceParserProvider) Shutdown(ctx context.Context) error {
 // Get returns a config.Parser that wraps the config.Default() with a parser
 // that can load and inject data from config sources. If there are no config sources
 // in the configuration the returned parser behaves like the config.Default().
-func (c *configSourceParserProvider) Get(ctx context.Context) (*config.Map, error) {
-	initialMap, err := c.retrieved.Get(ctx)
+func (c *configSourceParserProvider) Get(ctx context.Context, onChange func(*configmapprovider.ChangeEvent)) (*config.Map, error) {
+	initialMap, err := c.retrieved.Get(ctx, onChange)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,14 @@ func (c *configSourceParserProvider) Get(ctx context.Context) (*config.Map, erro
 	}
 
 	c.csm = csm
+	go c.callingWatchForUpdate(onChange)
 	return effectiveMap, nil
+}
+
+func (c *configSourceParserProvider) callingWatchForUpdate(onChange func(*configmapprovider.ChangeEvent)) {
+	onChange(&configmapprovider.ChangeEvent{
+		Error: c.WatchForUpdate(),
+	})
 }
 
 // WatchForUpdate is used to monitor for updates on configuration values that

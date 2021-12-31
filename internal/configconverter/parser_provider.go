@@ -18,8 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/signalfx/splunk-otel-collector/internal/configmapprovider"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmapprovider"
 )
 
 // converterProvider wraps a configmapprovider.Provider and accepts a list of functions that
@@ -49,11 +49,11 @@ func (p converterProvider) Shutdown(context.Context) error {
 	return nil
 }
 
-func (p *converterProvider) Get(ctx context.Context) (*config.Map, error) {
+func (p *converterProvider) Get(ctx context.Context, onChange func(*configmapprovider.ChangeEvent)) (*config.Map, error) {
 	if p.retrieved == nil {
 		return nil, fmt.Errorf("must Retrieve() before attempting Get()")
 	}
-	cfgMap, err := p.retrieved.Get(ctx)
+	cfgMap, err := p.retrieved.Get(ctx, onChange)
 	if err != nil {
 		return nil, fmt.Errorf("converterProvider.Get(): %w", err)
 	}
@@ -70,5 +70,5 @@ func (p *converterProvider) Get(ctx context.Context) (*config.Map, error) {
 }
 
 func (p *converterProvider) Close(ctx context.Context) error {
-	return nil
+	return p.retrieved.Close(ctx)
 }

@@ -28,12 +28,13 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/config/configunmarshaler"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
 
 	"github.com/signalfx/splunk-otel-collector/internal/components"
 	"github.com/signalfx/splunk-otel-collector/internal/configconverter"
+	"github.com/signalfx/splunk-otel-collector/internal/configmapprovider"
 	"github.com/signalfx/splunk-otel-collector/internal/configprovider"
 	"github.com/signalfx/splunk-otel-collector/internal/configsources"
 	"github.com/signalfx/splunk-otel-collector/internal/version"
@@ -104,9 +105,9 @@ func main() {
 	}
 
 	serviceParams := service.CollectorSettings{
-		BuildInfo:         info,
-		Factories:         factories,
-		ConfigMapProvider: parserProvider,
+		BuildInfo:      info,
+		Factories:      factories,
+		ConfigProvider: configprovider.NewConfigProvider(parserProvider, configunmarshaler.NewDefault()),
 	}
 
 	if err := run(serviceParams); err != nil {
